@@ -26,6 +26,7 @@ borg_consistency_checks:
   - repository
   - archives
 borg_consistency_prefix: '{hostname}-'
+borg_relocated_repo_access_is_ok: no
 ssh_key_file: .ssh/id_ed25519
 bb_new_sshkey: True
 bb_append: True
