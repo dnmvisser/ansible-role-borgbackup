@@ -102,8 +102,8 @@
     - name: Add cron job for create, check and prune
       cron:
         name: "borgmatic"
-        hour: "{{ 6 | random }}"
-        minute: "{{ 59 | random }}"
+        hour: "{{ 6 | random(seed=inventory_hostname) }}"
+        minute: "{{ 59 | random(seed=inventory_hostname) }}"
         user: "root"
         cron_file: borgmatic
         job: "/usr/local/bin/borgmatic"
