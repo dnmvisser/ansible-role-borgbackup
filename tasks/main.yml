@@ -88,8 +88,8 @@
     - name: Add cron job for infrequent checks
       cron:
         name: "borgmatic-check"
-        day: "{{ 28 | random }}"
-        hour: "{{ range(7, 24) | random }}"
+        day: "{{ 28 | random(seed=inventory_hostname) }}"
+        hour: "{{ range(7, 24) | random(seed=inventory_hostname) }}"
         minute: "{{ 59 | random }}"
         user: "root"
         cron_file: borgmatic
