@@ -2,7 +2,9 @@
 - name: Include OS-specific variables
   include_vars: "{{ item }}"
   with_first_found:
+    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_distribution }}.yml"
     - "{{ ansible_os_family }}.yml"
 
 - name: Run OS-specific setup
@@ -39,7 +41,19 @@
 #    var: root_user['ssh_public_key']
 
 
-- name: Ensures borgmatic configuration directory exists
+- name: Set Repository Fact
+  set_fact:
+    borg_repository: |-
+          {% if borg_repository is defined and borg_repository is string %}
+          {{ [borg_repository] + [ repo_creation['data']['repoPath'] ] }}
+          {% elif borg_repository is defined %}
+          {{ borg_repository + [ repo_creation['data']['repoPath'] ] }}
+          {% else %}
+          {{ repo_creation['data']['repoPath'] }}
+          {% endif %}
+  when: create_repo
+
+- name: Ensures /etc/borgmatic exists
   file:
     path: "{{ borgmatic_config_dir }}"
     state: directory
@@ -58,18 +72,18 @@
     - name: Add cron job for regular create and prune
       cron:
         name: "borgmatic"
-        hour: "{{ 6 |random(seed=inventory_hostname) }}"
-        minute: "{{ 59 |random(seed=inventory_hostname) }}"
-        user: "{{ borgmatic_user }}"
+        hour: "{{ borgmatic_cron_hour }}"
+        minute: "{{ borgmatic_cron_minute }}"
+        user: "root"
         cron_file: borgmatic
         job: "{{ borgmatic }} -c {{ borgmatic_config_dir }}/{{ borgmatic_config_name }} --create --prune"
     - name: Add cron job for infrequent checks
       cron:
         name: "borgmatic-check"
-        day: "{{ 28 | random(seed=inventory_hostname) }}"
-        hour: "{{ range(7, 24) | random(seed=inventory_hostname) }}"
-        minute: "{{ 59 | random(seed=inventory_hostname) }}"
-        user: "{{ borgmatic_user }}"
+        day: "{{ borgmatic_cron_checks_day }}"
+        hour: "{{ borgmatic_cron_checks_hour }}"
+        minute: "{{ borgmatic_cron_checks_minute }}"
+        user: "root"
         cron_file: borgmatic
         job: "{{ borgmatic }} -c {{ borgmatic_config_dir }}/{{ borgmatic_config_name }} --check"
   when: borgmatic_large_repo
@@ -80,9 +94,9 @@
     - name: Add cron job for create, check and prune
       cron:
         name: "borgmatic"
-        hour: "{{ 6 | random(seed=inventory_hostname) }}"
-        minute: "{{ 59 | random(seed=inventory_hostname) }}"
-        user: "{{ borgmatic_user }}"
+        hour: "{{ borgmatic_cron_hour }}"
+        minute: "{{ borgmatic_cron_minute }}"
+        user: "root"
         cron_file: borgmatic
         job: "{{ borgmatic }}"
     - name: Ensure separate check cron job is absent
